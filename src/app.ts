@@ -12,6 +12,7 @@ class HomePage {
     flag = false
     x = 'black'
     y = 2
+    client: SocketIOClient.Socket
     constructor() {
         this.ctx = this.ctx!
         this.canvas.addEventListener('mousemove', (e) => {
@@ -23,9 +24,12 @@ class HomePage {
         this.canvas.addEventListener('mousemove', (e) => {
             this.findxy('move', e)
         })
-        let client = io('https://socket.selfscale.io')
-        client.on('connect', () => {
+        this.client = io('http://localhost:8081')
+        this.client.on('connect', () => {
             console.log(`I'm connected!`)
+        })
+        this.client.on('drawB', (data: { currX: number, currY: number }) => {
+            this.drawSocket(data.currX, data.currY)
         })
     }
     findxy(res: 'move' | 'up' | 'down' | 'out', event: MouseEvent) {
@@ -40,6 +44,7 @@ class HomePage {
                 this.ctx!.beginPath()
                 this.ctx!.fillStyle = this.x
                 this.ctx!.fillRect(this.currX, this.currY, 2, 2)
+                this.client.emit('draw', { currX: this.currX, currY: this.currY })
             }
         }
         if (res === 'up' || res === 'out') {
@@ -54,6 +59,11 @@ class HomePage {
                 this.draw()
             }
         }
+    }
+    drawSocket(x: number, y: number) {
+        this.ctx!.beginPath()
+        this.ctx!.fillStyle = this.x
+        this.ctx!.fillRect(x, y, 2, 2)
     }
     draw() {
         this.ctx!.beginPath()
