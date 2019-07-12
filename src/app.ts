@@ -1,25 +1,68 @@
 import $ from 'jquery'
-import 'uikit/dist/js/uikit.min.js'
+import io from 'socket.io-client'
 import './style/style.scss'
-import Ractive from 'ractive'
 class HomePage {
-    reactiveDiv = $('<div>{{username}}</div>').html()
-    ractive = new Ractive({
-        target: '#handleme',
-        template: this.reactiveDiv,
-        data: {username: 'Jim Jones'}
-    })
+    canvas = <HTMLCanvasElement>document.getElementById("canvas")
+    ctx = this.canvas!.getContext("2d")
+    prevX = 0
+    currX = 0
+    prevY = 0
+    currY = 0
+    dot_flag = false
+    flag = false
+    x = 'black'
+    y = 2
     constructor() {
-        this.startScrollWatch()
-        setTimeout(() => {
-            this.ractive.set('username', 'Hey There Stephen')
-        }, 2000)
-    }
-
-    startScrollWatch() {
-        $(window).scroll((e) => {
-            console.log($(window).scrollTop())
+        this.ctx = this.ctx!
+        this.canvas.addEventListener('mousemove', (e) => {
+            this.findxy('move', e)
+        }, false)
+        this.canvas.addEventListener('mousedown', (e) => {
+            this.findxy('down', e)
         })
+        this.canvas.addEventListener('mousemove', (e) => {
+            this.findxy('move', e)
+        })
+        let client = io('https://socket.selfscale.io')
+        client.on('connect', () => {
+            console.log(`I'm connected!`)
+        })
+    }
+    findxy(res: 'move' | 'up' | 'down' | 'out', event: MouseEvent) {
+        if (res === 'down') {
+            this.prevX = this.currX
+            this.prevY = this.currY
+            this.currX = event.clientX - this.canvas.offsetLeft
+            this.currY = event.clientY - this.canvas.offsetTop
+            this.flag = false
+            this.dot_flag = true
+            if (this.dot_flag) {
+                this.ctx!.beginPath()
+                this.ctx!.fillStyle = this.x
+                this.ctx!.fillRect(this.currX, this.currY, 2, 2)
+            }
+        }
+        if (res === 'up' || res === 'out') {
+            this.flag = false
+        }
+        if (res === 'move') {
+            if (this.flag) {
+                this.prevX = this.currX
+                this.prevY = this.currY
+                this.currX = event.clientX - this.canvas.offsetLeft
+                this.currY = event.clientY - this.canvas.offsetTop
+                this.draw()
+            }
+        }
+    }
+    draw() {
+        this.ctx!.beginPath()
+        this.ctx!.moveTo(this.prevX, this.prevY)
+        this.ctx!.lineTo(this.currX, this.currY)
+        this.ctx!.strokeStyle = this.x
+        this.ctx!.lineWidth = this.y
+        this.ctx!.stroke()
+        this.ctx!.closePath()
     }
 }
 
